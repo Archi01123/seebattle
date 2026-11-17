@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#062c47">
+<title>⚓ Морской бой</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{
+  --ink:#04223a;--deep:#062c47;--sea:#0b3f63;--sea2:#0f537f;
+  --aqua:#35c4dc;--aqua2:#8fe6f4;--foam:#eefaff;
+  --coral:#ff6b4a;--amber:#ffc24b;--green:#39d98a;--red:#ff5d5d;
+  --card:rgba(9,44,72,.92);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{touch-action:manipulation}
+body{font-family:Nunito,system-ui,sans-serif;color:var(--foam);min-height:100vh;overflow-x:hidden;
+  background:linear-gradient(180deg,#a5e3f5 0%,#5cb6e0 22%,#2b8ec4 40%,#0e5d8c 60%,#083a5e 100%);
+  background-attachment:fixed}
+h1,h2,h3,.logo,.btn,.mbtn b{font-family:'Russo One',Nunito,sans-serif;font-weight:400;letter-spacing:.4px}
+button{font:inherit;color:inherit;border:0;cursor:pointer;user-select:none}
+.hidden{display:none!important}
+.center{text-align:center}
+
+#scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.sun{position:absolute;top:4vh;right:8vw;width:70px;height:70px;border-radius:50%;
+  background:radial-gradient(circle,#fff8d8,#ffd76a 60%,rgba(255,215,106,0) 72%);filter:blur(1px)}
+.cloud{position:absolute;width:130px;height:34px;border-radius:40px;background:rgba(255,255,255,.85);filter:blur(2px);animation:drift linear infinite}
+.cloud::before,.cloud::after{content:'';position:absolute;background:inherit;border-radius:50%}
+.cloud::before{width:56px;height:56px;left:18px;top:-26px}
+.cloud::after{width:40px;height:40px;right:22px;top:-16px}
+.c1{top:8vh;animation-duration:70s}
+.c2{top:16vh;transform:scale(.7);animation-duration:95s;animation-delay:-40s;opacity:.8}
+.c3{top:3vh;transform:scale(1.25);animation-duration:120s;animation-delay:-70s;opacity:.65}
+@keyframes drift{from{left:-25%}to{left:110%}}
+.boat{position:absolute;bottom:16vh;left:12vw;font-size:44px;animation:bob 4.2s ease-in-out infinite;filter:drop-shadow(0 6px 4px rgba(0,20,40,.35))}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-10px) rotate(3deg)}}
+.wave{position:absolute;left:0;bottom:0;width:200%;display:block}
+.w1{height:14vh;fill:#0d4c78;animation:sway 11s ease-in-out infinite alternate}
+.w2{height:10vh;fill:#093a5e;animation:sway 8s ease-in-out infinite alternate-reverse}
+.w3{height:6vh;fill:#062c47;animation:sway 6s ease-in-out infinite alternate}
+@keyframes sway{from{transform:translateX(0)}to{transform:translateX(-25%)}}
+
+#app{position:relative;z-index:1;max-width:540px;margin:0 auto;padding:14px 12px 40px}
+.scr{display:none;animation:up .35s ease}
+.scr.on{display:block}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.masthead{display:flex;align-items:center;gap:14px;padding:18px 6px 8px}
+.flag{width:64px;height:64px;border-radius:16px;background:linear-gradient(160deg,#124a77,#0a3152);
+  display:grid;place-items:center;font-size:34px;box-shadow:0 6px 0 #052338,0 10px 22px rgba(0,20,40,.45);animation:bob 5s ease-in-out infinite}
+.logo{font-size:clamp(34px,10vw,52px);line-height:.95;color:#fff;text-shadow:0 3px 0 #0a3a5e,0 7px 16px rgba(0,20,40,.5)}
+.logo span{color:var(--amber)}
+.tag{margin:6px 6px 0;font-size:13px;font-weight:800;color:#dff4ff;opacity:.9}
+.menu{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.mbtn{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:14px 16px;border-radius:14px;
+  background:var(--card);box-shadow:0 5px 0 rgba(3,22,38,.9),0 8px 18px rgba(0,20,40,.35);
+  font-size:16px;font-weight:800;color:var(--foam);transition:transform .12s,box-shadow .12s}
+.mbtn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(3,22,38,.9)}
+.mbtn b{flex:0 0 44px;height:44px;display:grid;place-items:center;border-radius:12px;font-size:22px;font-weight:400}
+.c1 b{background:#35c4dc33;box-shadow:inset 0 0 0 2px #35c4dc}
+.c2 b{background:#39d98a33;box-shadow:inset 0 0 0 2px #39d98a}
+.c3 b{background:#ffc24b33;box-shadow:inset 0 0 0 2px #ffc24b}
+.c4 b{background:#ff6b4a33;box-shadow:inset 0 0 0 2px #ff6b4a}
+.c5 b{background:#7fb2ff33;box-shadow:inset 0 0 0 2px #7fb2ff}
+.c6 b{background:#c9d6dd33;box-shadow:inset 0 0 0 2px #c9d6dd}
+small.under{display:block;font-size:11px;font-weight:700;opacity:.65}
+
+h2{font-size:24px;margin:10px 4px 4px;text-shadow:0 2px 0 rgba(4,30,50,.6)}
+.hint{font-size:13px;font-weight:700;color:#bfe6f5;margin:4px 4px 10px;line-height:1.45}
+.warn{font-size:12.5px;font-weight:700;color:#ffd9a1;background:#5c3a1088;border:1px dashed #ffc24b;border-radius:10px;padding:9px 11px;margin-top:12px}
+.panel{background:var(--card);border-radius:16px;padding:14px;margin:12px 0;box-shadow:0 6px 0 rgba(3,22,38,.85),0 10px 24px rgba(0,20,40,.35)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.row.between{justify-content:space-between;align-items:center;margin-top:0}
+.btn,.big{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:12px;
+  padding:12px 16px;font-size:15px;background:linear-gradient(180deg,#39c4dc,#1d94b4);color:#03202f;
+  box-shadow:0 4px 0 #0c5874;transition:transform .1s}
+.btn:active,.big:active{transform:translateY(3px);box-shadow:0 1px 0 #0c5874}
+.big.amber{background:linear-gradient(180deg,#ffd069,#f5a623);box-shadow:0 4px 0 #9c6206;color:#3a2400}
+.big.amber:active{box-shadow:0 1px 0 #9c6206}
+.big.green{background:linear-gradient(180deg,#5ff0a5,#22b86b);box-shadow:0 4px 0 #0d6b3c;color:#04331b}
+.big.green:active{box-shadow:0 1px 0 #0d6b3c}
+.big.ghost{background:transparent;box-shadow:inset 0 0 0 2px #7fb9d6;color:#dff4ff}
+.big.danger{background:linear-gradient(180deg,#ff8a70,#e2492c);box-shadow:0 4px 0 #7d2110;color:#fff}
+.btn.sm{padding:9px 12px;font-size:13.5px}
+.btn.back{position:absolute;top:6px;left:6px;z-index:5;background:#0a315299;color:#dff4ff;box-shadow:inset 0 0 0 1.5px #4b90b5;padding:8px 12px;border-radius:10px}
+.chk{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:800;margin:10px 4px;color:#dff4ff}
+.chk input{width:19px;height:19px;accent-color:var(--amber)}
+textarea,input[type=text]{width:100%;border-radius:10px;border:2px solid #2f7ba6;background:#06263e;color:var(--foam);padding:9px;font:inherit;font-size:14px;resize:none}
+input[type=text]:focus,textarea:focus{outline:0;border-color:var(--amber)}
+
+.bstage{position:relative;width:min(96vw,450px);margin:8px auto}
+.bstage.small{width:min(84vw,370px)}
+.board{display:grid;grid-template-columns:1.15em repeat(10,1fr);gap:2.5px;padding:6px;border-radius:12px;
+  background:linear-gradient(160deg,#0a3757,#062942);box-shadow:inset 0 0 0 2px #1d5e86,0 6px 14px rgba(0,20,40,.4)}
+.lbl{display:grid;place-items:center;font-size:.62em;font-weight:900;color:#7fd0e8}
+.board{font-size:clamp(11px,3.2vw,15px)}
+.bstage.small .board{font-size:clamp(10px,2.7vw,13px)}
+.corner{opacity:0}
+.c{position:relative;aspect-ratio:1;border-radius:3.5px;background:linear-gradient(160deg,rgba(125,215,238,.30),rgba(30,110,150,.32));
+  box-shadow:inset 0 0 0 1px rgba(190,240,255,.15);transition:background .12s}
+.tapzone .c:not(.miss):not(.hit):active{background:rgba(255,255,255,.4)}
+.c.ship{background:linear-gradient(160deg,#d4dee4,#93a9b5);box-shadow:inset 0 0 0 2px #46617370,inset 0 -3px 0 #5d7686}
+.c.ship.sel{box-shadow:inset 0 0 0 2px var(--amber),0 0 0 3px var(--amber),inset 0 -3px 0 #5d7686;animation:pulse 1.2s infinite}
+.c.halo{background:rgba(255,206,84,.24);box-shadow:inset 0 0 0 1px rgba(255,206,84,.45)}
+.c.prevok{background:rgba(57,217,138,.7)!important;box-shadow:inset 0 0 0 2px #39d98a!important}
+.c.prevbad{background:rgba(255,93,93,.75)!important;box-shadow:inset 0 0 0 2px #ff5d5d!important}
+.c.hit{background:radial-gradient(circle at 50% 38%,#ffb36b,#d3402a 72%)}
+.c.hit::before,.c.hit::after{content:'';position:absolute;left:16%;right:16%;top:44%;height:13%;border-radius:2px;background:#57150a}
+.c.hit::before{transform:rotate(45deg)}.c.hit::after{transform:rotate(-45deg)}
+.c.miss::after{content:'';position:absolute;inset:0;margin:auto;width:28%;height:28%;border-radius:50%;
+  background:radial-gradient(circle,#fff,rgba(255,255,255,.12) 75%)}
+.c.sunk{background:#802314!important;box-shadow:inset 0 0 0 2px #3f0e06}
+.c.pend{box-shadow:inset 0 0 0 2px var(--amber)}
+.c.pend::after{content:'✦';position:absolute;inset:0;display:grid;place-items:center;color:var(--amber);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25;transform:scale(.8)}}
+.c.badflash{background:#ff5d5d!important}
+.shake{animation:shk .45s}
+@keyframes shk{0%,100%{transform:none}20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(3px,2px)}}
+.sweep{position:absolute;inset:6px;border-radius:10px;pointer-events:none;opacity:.5;
+  background:conic-gradient(from 0deg,transparent 0 78%,rgba(94,255,196,.16) 92%,transparent 100%);animation:spin 5s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.boomfx{position:absolute;inset:-45%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,#fff7d1 0%,#ffc24b 32%,#ff6b4a 58%,transparent 72%);animation:boom .55s ease-out forwards}
+@keyframes boom{from{transform:scale(.15);opacity:1}to{transform:scale(1.7);opacity:0}}
+.ringfx{position:absolute;inset:-35%;border:3px solid rgba(225,250,255,.95);border-radius:50%;pointer-events:none;animation:ring .7s ease-out forwards}
+@keyframes ring{from{transform:scale(.2);opacity:1}to{transform:scale(1.5);opacity:0}}
+.dropfx{position:absolute;left:50%;top:50%;width:5px;height:5px;border-radius:50%;background:#e2f7ff;pointer-events:none;animation:drop .6s ease-out forwards}
+@keyframes drop{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+
+.bwrap{position:relative;padding-top:8px}
+.bhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 2px}
+.chip{font-weight:900;font-size:14px;background:#0a315299;padding:6px 11px;border-radius:10px;box-shadow:inset 0 0 0 1.5px #4b90b5}
+.fleet{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.fchip{display:flex;gap:1.5px;padding:2px;border-radius:4px;background:#06263e99}
+.fchip i{width:7px;height:7px;border-radius:2px;background:#9fd8e8}
+.fchip.dead{opacity:.3;filter:grayscale(1)}
+#turnbar{text-align:center;margin:8px 0 4px;font-family:'Russo One';font-size:17px;text-shadow:0 2px 0 rgba(4,30,50,.6)}
+#turnbar.me{color:#ffd97a;animation:pulse 1.4s infinite}
+#turnbar.foe{color:#9fc9dd}
+.ticker{margin:2px auto 8px;max-width:min(96vw,450px);background:#06263ecc;border-radius:10px;padding:8px 12px;
+  font-size:13px;font-weight:800;color:#cdeefb;text-align:center;box-shadow:inset 0 0 0 1px #2f7ba655;cursor:pointer}
+.roombar{background:#0f537fcc;border:1.5px solid var(--green);border-radius:14px;padding:12px;margin:10px 0;text-align:center}
+.roombar p{font-size:14px;font-weight:800;color:#c4ffe0;margin-bottom:8px}
+.roomcode{display:inline-block;font-family:'Russo One';font-size:28px;letter-spacing:3px;background:#06263e;padding:8px 18px;border-radius:10px;color:var(--amber);box-shadow:inset 0 0 0 2px var(--amber);margin:6px 0;user-select:all}
+
+.dock{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:14px auto;padding:12px;background:#0a3152aa;border-radius:14px;box-shadow:inset 0 0 0 1.5px #2f7ba655}
+.dchip{display:flex;gap:2px;padding:8px 10px;border-radius:9px;background:#06263e;box-shadow:inset 0 0 0 2px #2f7ba6;opacity:.55;transition:.15s;cursor:pointer}
+.dchip.avail{opacity:1}
+.dchip.sel{box-shadow:inset 0 0 0 2px var(--amber),0 0 0 3px var(--amber);background:#4a3407;transform:scale(1.08)}
+.dchip.empty{opacity:.18;pointer-events:none}
+.dchip i{width:14px;height:14px;border-radius:3px;background:linear-gradient(160deg,#d4dee4,#93a9b5);box-shadow:inset 0 -2px 0 #5d7686}
+.dchip.sel i{background:linear-gradient(160deg,#ffe084,#f5a623);box-shadow:inset 0 -2px 0 #9c6206}
+.dchip .count{font-weight:900;font-size:11px;color:#ffd97a;margin-left:6px;align-self:center}
+
+.place-controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+.place-controls .btn{font-size:13px}
+.place-hint{text-align:center;font-size:13px;font-weight:800;color:#ffd97a;margin:6px 4px;min-height:18px}
+
+.olist{list-style:none;max-height:52vh;overflow:auto;padding-left:4px}
+.olist li{padding:7px 8px;border-bottom:1px solid #1d5e8666;font-size:13.5px;font-weight:700;display:flex;gap:8px;align-items:center}
+.dot{flex:0 0 10px;height:10px;border-radius:50%}
+.dot.h{background:var(--coral)}.dot.m{background:#8fd0e8}.dot.s{background:var(--red)}
+.hitem{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#0a315299;border-radius:12px;padding:11px 13px;margin-bottom:9px;box-shadow:inset 0 0 0 1px #2f7ba655}
+.hitem b{font-size:14.5px}
+.hitem small{display:block;font-size:11.5px;opacity:.7;font-weight:700}
+.badge{font-size:11px;font-weight:900;padding:3px 8px;border-radius:8px;background:#124a77}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stat{background:#0a3152aa;border-radius:12px;padding:11px;text-align:center;box-shadow:inset 0 0 0 1px #2f7ba655}
+.stat b{display:block;font-size:26px;font-family:'Russo One';color:var(--amber)}
+.stat span{font-size:12px;font-weight:800;opacity:.85}
+.tgl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid #1d5e8655;font-weight:800;font-size:14.5px}
+.tgl input{display:none}
+.tgl i{flex:0 0 52px;height:29px;border-radius:20px;background:#123a58;position:relative;transition:.2s;box-shadow:inset 0 0 0 2px #2f7ba6}
+.tgl i::after{content:'';position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:#8fb8cd;transition:.2s}
+.tgl input:checked+i{background:#1c7a4a;box-shadow:inset 0 0 0 2px #39d98a}
+.tgl input:checked+i::after{left:26px;background:#eafff3}
+
+.ovl{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;
+  background:radial-gradient(circle at 50% 30%,#0d466ef0,#041c30f7)}
+.ovl .panel{width:100%;max-width:400px;text-align:center}
+.big-emoji{font-size:52px;margin-bottom:6px;animation:bob 3s ease-in-out infinite}
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(80px);z-index:80;
+  background:#04203af0;border:1.5px solid var(--amber);color:#ffe6b0;font-weight:800;font-size:13.5px;
+  padding:11px 16px;border-radius:12px;max-width:88vw;transition:.3s;opacity:0;text-align:center}
+#toast.on{transform:translateX(-50%) translateY(0);opacity:1}
+#resEmoji{font-size:64px;animation:bob 2.6s ease-in-out infinite}
+#resTitle{font-size:clamp(30px,9vw,44px);margin:4px 0}
+#resTitle.win{color:#ffd97a;text-shadow:0 3px 0 #7a4b00}
+#resTitle.lose{color:#9fc9dd}
+.conf{position:absolute;top:-10px;width:9px;height:13px;border-radius:2px;animation:fall linear forwards;z-index:2}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:.4}}
+
+.code-input{font-family:'Russo One';font-size:24px;text-align:center;letter-spacing:4px;text-transform:uppercase}
+#fbStatus{font-size:12px;font-weight:800;padding:6px 10px;border-radius:8px;margin-top:8px}
+#fbStatus.ok{background:#163a2a;color:#7fffa8;box-shadow:inset 0 0 0 1px #39d98a}
+#fbStatus.err{background:#5a2020;color:#ff9090;box-shadow:inset 0 0 0 1px #ff5d5d}
+#fbStatus.wait{background:#3a2a08;color:#ffc24b;box-shadow:inset 0 0 0 1px #ffc24b}
+
+.helpbox{background:#0a3152aa;border-radius:12px;padding:12px;margin:10px 0;box-shadow:inset 0 0 0 1px #2f7ba655}
+.helpbox ol{padding-left:22px;font-size:12.5px;line-height:1.6}
+.helpbox code{background:#06263e;padding:2px 6px;border-radius:4px;font-size:11.5px;color:#7fffa8}
+.helpbox a{color:var(--amber)}
+</style>
+</head>
+<body>
+
+<div id="scene">
+  <div class="sun"></div>
+  <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+  <div class="boat">⛵</div>
+  <svg class="wave w1" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M0,60 C150,110 350,10 600,60 C850,110 1050,10 1200,60 L1200,120 L0,120 Z"/></svg>
+  <svg class="wave w2" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M0,60 C200,10 400,110 600,60 C800,10 1000,110 1200,60 L1200,120 L0,120 Z"/></svg>
+  <svg class="wave w3" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M0,70 C150,110 400,30 600,70 C800,110 1050,30 1200,70 L1200,120 L0,120 Z"/></svg>
+</div>
+
+<main id="app">
+
+<!-- МЕНЮ -->
+<section id="scr-menu" class="scr on">
+  <div class="masthead">
+    <div class="flag">⚓</div>
+    <div><h1 class="logo">МОРСКОЙ<br><span>БОЙ</span></h1></div>
+  </div>
+  <p class="tag">Real-time по коду комнаты · попал — ходи ещё · с сыном за 30 секунд</p>
+  <nav class="menu">
+    <button class="mbtn c1" data-go="ai"><b>🤖</b><span>Против компьютера<small class="under">одиночная игра</small></span></button>
+    <button class="mbtn c2" data-go="hs"><b>👥</b><span>Вдвоём на одном телефоне<small class="under">передавайте телефон по очереди</small></span></button>
+    <button class="mbtn c3" data-go="net"><b>⚡</b><span>С другом — real-time по коду<small class="under">мгновенно, без QR и ссылок</small></span></button>
+    <button class="mbtn c4" data-go="history"><b>🗂</b><span>История боёв<small class="under">расположение флота и все ходы</small></span></button>
+    <button class="mbtn c5" data-go="stats"><b>🏅</b><span>Рейтинг<small class="under">победы, серии, статистика</small></span></button>
+    <button class="mbtn c6" data-go="settings"><b>⚙️</b><span>Настройки<small class="under">вибрация, эффекты, выделение клеток</small></span></button>
+  </nav>
+  <p id="menuStats" class="hint center" style="margin-top:16px"></p>
+</section>
+
+<!-- РАССТАНОВКА -->
+<section id="scr-place" class="scr">
+  <button class="btn back sm" id="btnBackPlace">‹</button>
+  <h2 id="placeTitle">Расставьте корабли</h2>
+  <p id="placeSub" class="hint">👆 Тапни корабль в доке → водишь пальцем по полю (видишь зелёный/красный превью) → отпусти чтобы поставить. Тап по поставленному — повернуть на месте.</p>
+  <div class="bstage"><div id="bP" class="board"></div></div>
+  <p id="placeHint" class="place-hint">Выберите корабль в доке ↓</p>
+  <div id="dock" class="dock"></div>
+  <div class="place-controls">
+    <button id="btnRotate" class="btn sm">⟳ Повернуть</button>
+    <button id="btnRemove" class="btn sm danger" disabled>✕ Убрать</button>
+    <button id="btnAuto" class="btn sm amber">🎲 Авто</button>
+    <button id="btnClear" class="btn sm">🗑 Сброс</button>
+  </div>
+  <label class="chk"><input type="checkbox" id="chkHalo"> Подсветка 1 клетки вокруг кораблей</label>
+  <div class="center"><button id="btnPlaceDone" class="big green" disabled>В бой! ⚓</button></div>
+</section>
+
+<!-- БОЙ -->
+<section id="scr-battle" class="scr">
+  <div class="bwrap">
+    <button class="btn back sm" id="btnExitBattle">⌂</button>
+    <div class="bhead"><div class="chip" id="whoTop">🤖 Компьютер</div><div class="fleet" id="fleetTop"></div></div>
+    <div class="bstage" id="stageE"><div id="bE" class="board tapzone"></div><div class="sweep"></div></div>
+    <div id="turnbar">—</div>
+    <div class="ticker" id="ticker">Бой начинается! Нажмите, чтобы открыть журнал.</div>
+    <div id="roomBar" class="roombar hidden"><p>Код комнаты:</p><div class="roomcode" id="roomCode"></div><p id="roomStatus">—</p></div>
+    <div class="bhead"><div class="chip" id="whoBot">🫵 Вы</div><div class="fleet" id="fleetBot"></div></div>
+    <div class="bstage small"><div id="bM" class="board"></div></div>
+  </div>
+</section>
+
+<!-- РЕЗУЛЬТАТ -->
+<section id="scr-result" class="scr">
+  <div class="panel center" style="position:relative;overflow:hidden;padding:26px 16px">
+    <div id="resEmoji">🏆</div>
+    <h2 id="resTitle">ПОБЕДА!</h2>
+    <p id="resSub" class="hint"></p>
+    <p id="resFair" class="hint"></p>
+    <div class="row" style="justify-content:center">
+      <button id="btnAgain" class="big">⚔️ Реванш</button>
+      <button id="btnResMenu" class="big ghost">⌂ Меню</button>
+    </div>
+  </div>
+</section>
+
+<!-- ИГРА ПО КОДУ -->
+<section id="scr-net" class="scr">
+  <button class="btn back sm" data-back="menu">‹</button>
+  <h2>Игра с другом ⚡</h2>
+  <p class="hint">Real-time синхронизация через Firebase. Сын вводит код — и ваши ходы появляются мгновенно!</p>
+  
+  <div class="panel">
+    <h3 style="margin-bottom:8px">🔑 Подключение к Firebase</h3>
+    <p class="hint" style="margin:0 0 10px">Чтобы играть в real-time, нужен бесплатный Firebase-проект. Настройка — один раз на 2 минуты, потом работает всегда.</p>
+    <textarea id="fbCfg" rows="5" placeholder='Вставьте сюда свой firebaseConfig (см. ниже инструкцию)'></textarea>
+    <div class="row">
+      <button id="btnFbSave" class="big green">💾 Сохранить и подключиться</button>
+    </div>
+    <div id="fbStatus"></div>
+    <details style="margin-top:12px"><summary style="font-weight:800;cursor:pointer;color:var(--amber)">📖 Как получить firebaseConfig (пошагово)</summary>
+      <div class="helpbox">
+        <ol>
+          <li>Откройте <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → войдите через Google</li>
+          <li>Нажмите <b>"Добавить проект"</b> → назовите <code>seabattle</code> → Далее → Далее → Создать</li>
+          <li>В меню слева: <b>Build → Realtime Database → Создать базу данных</b> → регион <code>europe-west1</code> → <b>"Запустить в тестовом режиме"</b> → Разрешить</li>
+          <li>Перейдите во вкладку <b>"Правила"</b> и замените содержимое на:<br><code style="white-space:pre">{ "rules": { ".read": true, ".write": true } }</code> → <b>Опубликовать</b></li>
+          <li>Шестерёнка ⚙️ → <b>Настройки проекта</b> → внизу <b>Ваши приложения</b> → иконка <code>&lt;/&gt;</code> → имя <code>seabattle</code> → Зарегистрировать</li>
+          <li>Скопируйте <b>весь объект</b> <code>const firebaseConfig = { ... }</code> и вставьте в поле выше</li>
+          <li>Нажмите <b>"Сохранить и подключиться"</b> ✅</li>
+        </ol>
+      </div>
+    </details>
+  </div>
+
+  <div id="netMain" class="hidden">
+    <div class="panel">
+      <h3 style="margin-bottom:8px">🎮 Создать игру</h3>
+      <p class="hint" style="margin:0 0 10px">Расставите флот → получите 6-значный код → скажите сыну код.</p>
+      <button id="btnNetNew" class="big amber">⚓ Создать игру</button>
+    </div>
+    <div class="panel">
+      <h3 style="margin-bottom:8px">🔗 Присоединиться по коду</h3>
+      <p class="hint" style="margin:0 0 10px">Введите 6-значный код, который назвал вам друг.</p>
+      <input type="text" id="joinCode" class="code-input" maxlength="6" placeholder="A3K9M2" autocomplete="off">
+      <div class="row"><button id="btnNetJoin" class="big green">▶ Войти в игру</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ИСТОРИЯ -->
+<section id="scr-history" class="scr">
+  <button class="btn back sm" data-back="menu">‹</button>
+  <h2>История боёв 🗂</h2>
+  <div id="histList"></div>
+</section>
+
+<!-- ПРОСМОТР -->
+<section id="scr-view" class="scr">
+  <button class="btn back sm" data-back="history">‹</button>
+  <h2 id="viewTitle">Бой</h2>
+  <div class="bhead"><div class="chip" id="viewTopName"></div><div class="fleet" id="viewFleetTop"></div></div>
+  <div class="bstage"><div id="vTop" class="board"></div></div>
+  <div class="bhead"><div class="chip" id="viewBotName"></div><div class="fleet" id="viewFleetBot"></div></div>
+  <div class="bstage small"><div id="vBot" class="board"></div></div>
+  <div class="panel"><div class="row between"><h3>Все ходы</h3><span class="badge" id="viewCount"></span></div><ol class="olist" id="viewMoves"></ol></div>
+</section>
+
+<!-- РЕЙТИНГ -->
+<section id="scr-stats" class="scr">
+  <button class="btn back sm" data-back="menu">‹</button>
+  <h2>Рейтинг 🏅</h2>
+  <div class="panel"><div class="stat-grid" id="statGrid"></div></div>
+  <div class="panel"><div id="statRows"></div></div>
+</section>
+
+<!-- НАСТРОЙКИ -->
+<section id="scr-settings" class="scr">
+  <button class="btn back sm" data-back="menu">‹</button>
+  <h2>Настройки ⚙️</h2>
+  <div class="panel">
+    <label class="tgl"><span>📳 Вибрация при попаданиях</span><input type="checkbox" id="setVibro"><i></i></label>
+    <label class="tgl"><span>✨ Звук и визуальные эффекты</span><input type="checkbox" id="setFx"><i></i></label>
+    <label class="tgl"><span>🔆 Подсветка 1 клетки вокруг кораблей</span><input type="checkbox" id="setHalo"><i></i></label>
+  </div>
+  <div class="center"><button id="btnWipe" class="big danger">🗑 Очистить историю и статистику</button></div>
+</section>
+
+</main>
+
+<!-- ПЕРЕДАЧА ХОДА -->
+<div id="handoff" class="ovl hidden">
+  <div class="panel"><div class="big-emoji">🔄</div><h2 id="hoTitle"></h2><p id="hoTxt" class="hint"></p>
+  <button id="hoBtn" class="big green">Я готов ▶</button></div>
+</div>
+
+<!-- ЖУРНАЛ -->
+<div id="logSheet" class="ovl hidden">
+  <div class="panel" style="max-width:420px"><div class="row between"><h3>Журнал боя</h3><button id="logClose" class="btn sm">✕</button></div>
+  <ol class="olist" id="logList"></ol></div>
+</div>
+
+<!-- ОЖИДАНИЕ СОПЕРНИКА -->
+<div id="waitOvl" class="ovl hidden">
+  <div class="panel">
+    <div class="big-emoji">⏳</div>
+    <h2 id="waitTitle">Ожидание соперника...</h2>
+    <p id="waitTxt" class="hint"></p>
+    <div class="roomcode" id="waitCode"></div>
+    <button id="waitCancel" class="btn sm ghost">✕ Отмена</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ═════════ Firebase ═════════ */
+let fb=null, fbRef=null, fbRoomId=null, fbMyRole=null, fbUnsubscribe=null;
+const fbConfigSaved=localStorage.getItem('bs_fb_cfg');
+if(fbConfigSaved){
+  try{initFirebase(JSON.parse(fbConfigSaved))}catch(e){console.warn('Firebase init failed',e)}
+}
+function initFirebase(cfg){
+  try{
+    if(fb){fb.app.delete().catch(()=>{})}
+    const app=firebase.initializeApp(cfg,'app_'+Date.now());
+    fb={app,db:firebase.database(app)};
+    $('#fbStatus').className='ok';$('#fbStatus').textContent='✅ Firebase подключён';
+    $('#fbCfg').value=JSON.stringify(cfg,null,2);
+    $('#netMain').classList.remove('hidden');
+    return true;
+  }catch(e){
+    $('#fbStatus').className='err';$('#fbStatus').textContent='❌ Ошибка: '+e.message;
+    return false;
+  }
+}
+$('#btnFbSave').onclick=()=>{
+  const v=$('#fbCfg').value.trim();
+  let cfg;
+  try{
+    // поддержим формат "const firebaseConfig = { ... }"
+    const m=v.match(/\{[\s\S]*\}/);
+    cfg=m?JSON.parse(m[0].replace(/(\w+):/g,'"$1":')):JSON.parse(v);
+  }catch(e){toast('Неверный формат конфига');return}
+  if(!cfg.databaseURL){toast('Нет databaseURL в конфиге');return}
+  if(initFirebase(cfg))localStorage.setItem('bs_fb_cfg',JSON.stringify(cfg));
+};
+
+/* ═════════ утилиты ═════════ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const LETTERS=['А','Б','В','Г','Д','Е','Ж','З','И','К'];
+const SIZES=[4,3,3,2,2,2,1,1,1,1];
+const fmtCell=c=>LETTERS[c%10]+(((c/10)|0)+1);
+const fmtLen=n=>['','однопалубный','двухпалубный','трёхпалубный','четырёхпалубный'][n];
+let settings=store.get('bs_set',{vibro:true,fx:true,halo:true});
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400)}
+function vib(p){if(settings.vibro&&navigator.vibrate)try{navigator.vibrate(p)}catch(e){}}
+function nav(id){$$('.scr').forEach(s=>s.classList.toggle('on',s.id==='scr-'+id));window.scrollTo(0,0)}
+function handoff(title,txt,cb){$('#hoTitle').textContent=title;$('#hoTxt').textContent=txt;$('#handoff').classList.remove('hidden');$('#hoBtn').onclick=()=>{$('#handoff').classList.add('hidden');cb&&cb()}}
+const randCode=()=>{const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<6;i++)s+=c[(Math.random()*c.length)|0];return s};
+
+/* ═════════ звук ═════════ */
+let AC=null;
+function tone(f0,f1,dur,type,vol){const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(f1,20),t+dur);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+dur+.02)}
+function noise(dur,freq,vol){const t=AC.currentTime,n=AC.sampleRate*dur|0,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=freq;const g=AC.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t)}
+function sfx(name){if(!settings.fx)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();
+  if(name==='shoot')tone(620,150,.13,'square',.12);
+  else if(name==='splash')noise(.35,800,.22);
+  else if(name==='boom'){noise(.4,260,.4);tone(130,38,.35,'sine',.35)}
+  else if(name==='sink'){noise(.5,200,.45);tone(160,30,.5,'sawtooth',.25)}
+  else if(name==='place')tone(760,520,.07,'triangle',.15);
+  else if(name==='ui')tone(500,480,.045,'triangle',.08);
+  else if(name==='win')[523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,f,.16,'triangle',.2),i*130));
+  else if(name==='lose')[392,311,233].forEach((f,i)=>setTimeout(()=>tone(f,f*.9,.24,'sine',.2),i*180));
+}catch(e){}}
+
+function fxBoom(el){if(!settings.fx)return;const s=document.createElement('i');s.className='boomfx';el.appendChild(s);setTimeout(()=>s.remove(),600)}
+function fxSplash(el){if(!settings.fx)return;const r=document.createElement('i');r.className='ringfx';el.appendChild(r);setTimeout(()=>r.remove(),750);
+  const w=el.offsetWidth||30;for(let k=0;k<5;k++){const d=document.createElement('i');d.className='dropfx';const a=Math.random()*6.283,rr=w*(.7+Math.random()*.9);d.style.setProperty('--dx',Math.cos(a)*rr+'px');d.style.setProperty('--dy',(Math.sin(a)*rr-w*1.2)+'px');el.appendChild(d);setTimeout(()=>d.remove(),650)}}
+
+/* ═════════ флот: логика ═════════ */
+const X=c=>c%10, Y=c=>(c/10)|0;
+function adj8(c){const r=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const x=X(c)+dx,y=Y(c)+dy;if(x>=0&&x<10&&y>=0&&y<10)r.push(y*10+x)}return r}
+function cellsAt(x,y,len,horiz){const arr=[];for(let k=0;k<len;k++)arr.push(horiz?y*10+x+k:(y+k)*10+x);return arr}
+function cellsFromStart(start,len,horiz){return cellsAt(X(start),Y(start),len,horiz)}
+function shipOrient(cells){return cells.length>1 && cells[1]===cells[0]+1}
+function shipBounds(cells){const xs=cells.map(X),ys=cells.map(Y);return{minX:Math.min(...xs),maxX:Math.max(...xs),minY:Math.min(...ys),maxY:Math.max(...ys)}}
+/* поворот корабля вокруг его центра */
+function rotateAroundCenter(cells){
+  if(cells.length===1)return cells.slice();
+  const horiz=shipOrient(cells);
+  const b=shipBounds(cells);
+  const cx=(b.minX+b.maxX)/2, cy=(b.minY+b.maxY)/2;
+  const newCells=[];
+  for(const c of cells){
+    const dx=X(c)-cx, dy=Y(c)-cy;
+    // поворот на 90°: (dx,dy) -> (-dy,dx)
+    const nx=Math.round(cx - dy), ny=Math.round(cy + dx);
+    if(nx<0||nx>9||ny<0||ny>9)return null;
+    newCells.push(ny*10+nx);
+  }
+  return newCells;
+}
+function canPlaceCells(ships,newCells,ignoreIdx){
+  for(let i=0;i<ships.length;i++){
+    if(i===ignoreIdx)continue;
+    for(const c of newCells){
+      if(ships[i].includes(c))return false;
+      if(adj8(c).some(n=>ships[i].includes(n)))return false;
+    }
+  }
+  // проверяем границы
+  for(const c of newCells)if(c<0||c>99)return false;
+  return true;
+}
+function randomLayout(){
+  for(let rep=0;rep<100;rep++){
+    const ships=[];let ok=true;
+    for(const len of SIZES){
+      let done=false;
+      for(let t=0;t<400&&!done;t++){
+        const horiz=Math.random()<.5;
+        const x=(Math.random()*(horiz?11-len:10))|0;
+        const y=(Math.random()*(horiz?10:11-len))|0;
+        const cells=cellsAt(x,y,len,horiz);
+        if(canPlaceCells(ships,cells,-1)){ships.push(cells);done=true}
+      }
+      if(!done){ok=false;break}
+    }
+    if(ok)return ships;
+  }
+  return null;
+}
+function checkShot(ships,hits,cell){
+  const si=ships.findIndex(s=>s.includes(cell));
+  if(si<0)return{res:'m'};
+  const sh=ships[si];
+  if(!sh.every(c=>c===cell||hits.has(c)))return{res:'h',si,sh};
+  const around=[];
+  sh.forEach(c=>adj8(c).forEach(n=>{if(!sh.includes(n)&&!hits.has(n)&&!around.includes(n))around.push(n)}));
+  return{res:'s',si,sh,around};
+}
+
+/* ═════════ ИИ ═════════ */
+function makeAI(){
+  let trail=[];
+  return{
+    choose(taken){
+      let cands=[];
+      if(trail.length===1){
+        cands=adj8(trail[0]).filter(i=>!taken.has(i)&&(X(i)===X(trail[0])||Y(i)===Y(trail[0])));
+      }else if(trail.length>1){
+        const s=[...trail].sort((a,b)=>a-b),hz=s.every(c=>Y(c)===Y(s[0]));
+        if(hz){const a=s[0],b=s[s.length-1];if(X(a)>0)cands.push(a-1);if(X(b)<9)cands.push(b+1)}
+        else{if(s[0]>=10)cands.push(s[0]-10);if(s[s.length-1]<90)cands.push(s[s.length-1]+10)}
+        cands=cands.filter(i=>!taken.has(i));
+      }
+      if(!cands.length){
+        const free=[];for(let i=0;i<100;i++)if(!taken.has(i))free.push(i);
+        const par=free.filter(i=>(X(i)+Y(i))%2===0);cands=par.length?par:free;
+      }
+      return cands[(Math.random()*cands.length)|0];
+    },
+    hit(c){trail.push(c)},
+    sunk(){trail=[]}
+  };
+}
+
+/* ═════════ построитель поля ═════════ */
+function buildBoard(el){
+  el.innerHTML='';const cells=[];
+  const corner=document.createElement('div');corner.className='corner';el.appendChild(corner);
+  LETTERS.forEach(L=>{const d=document.createElement('div');d.className='lbl';d.textContent=L;el.appendChild(d)});
+  for(let r=0;r<10;r++){
+    const l=document.createElement('div');l.className='lbl';l.textContent=r+1;el.appendChild(l);
+    for(let c=0;c<10;c++){
+      const d=document.createElement('div');d.className='c';d.dataset.idx=r*10+c;el.appendChild(d);cells.push(d);
+    }
+  }
+  return cells;
+}
+function fleetChips(el,list){
+  el.innerHTML='';list.forEach(f=>{
+    const ch=document.createElement('span');ch.className='fchip'+(f.dead?' dead':'');
+    for(let i=0;i<f.len;i++)ch.appendChild(document.createElement('i'));el.appendChild(ch);
+  });
+}
+
+/* ═════════ РАССТАНОВКА (УЛУЧШЕННАЯ) ═════════ */
+const P={
+  mode:null,phase:0,ships:[],cells:[],
+  holding:null, /* {len,orient} или null */
+  selectedIdx:-1,
+  orient:true, /* true = горизонт */
+  hover:-1,
+  
+  start(mode,phase){
+    this.mode=mode;this.phase=phase||0;
+    this.ships=[];this.orient=true;this.holding=null;this.selectedIdx=-1;this.hover=-1;
+    this.cells=buildBoard($('#bP'));
+    const titles={ai:'Расставьте ваш флот',hs:`Игрок ${(this.phase+1)} — расстановка кораблей`,net:'Расставьте ваш флот'};
+    $('#placeTitle').textContent=titles[mode]||'Расстановка';
+    $('#chkHalo').checked=settings.halo;
+    this.draw();this.drawDock();nav('place');
+  },
+  
+  blocked(){
+    const b=new Set();
+    this.ships.forEach(sh=>sh.forEach(c=>{b.add(c);adj8(c).forEach(n=>b.add(n))}));
+    return b;
+  },
+  
+  draw(){
+    this.cells.forEach(el=>el.className='c');
+    const bl=settings.halo?this.blocked():new Set();
+    if(settings.halo)bl.forEach(c=>{if(!this.ships.some(s=>s.includes(c)))this.cells[c].classList.add('halo')});
+    this.ships.forEach((sh,i)=>sh.forEach(c=>{
+      this.cells[c].classList.add('ship');
+      if(i===this.selectedIdx)this.cells[c].classList.add('sel');
+    }));
+    if(this.holding && this.hover>=0){
+      const cells=cellsFromStart(this.hover,this.holding.len,this.orient);
+      const ok=canPlaceCells(this.ships,cells,-1);
+      cells.forEach(c=>{if(c>=0&&c<100)this.cells[c].classList.add(ok?'prevok':'prevbad')});
+    }
+    $('#btnPlaceDone').disabled=this.ships.length<10;
+    $('#btnRemove').disabled=this.selectedIdx<0;
+    const h=$('#placeHint');
+    if(this.holding){h.textContent=`В руке: ${fmtLen(this.holding.len)} (${this.orient?'▬ гориз':'▮ верт'}) · тап по полю — поставить`}
+    else if(this.selectedIdx>=0){h.textContent=`Выбран корабль · тап по нему — повернуть · ✕ — убрать`}
+    else if(this.ships.length<10){h.textContent=`Осталось: ${10-this.ships.length} кораблей · выбери в доке ↓`}
+    else{h.textContent='🎉 Флот готов! Жми «В бой!»'}
+  },
+  
+  drawDock(){
+    const d=$('#dock');d.innerHTML='';
+    const used={};this.ships.forEach(s=>used[s.length]=(used[s.length]||0)+1);
+    [4,3,2,1].forEach(len=>{
+      const need=SIZES.filter(s=>s===len).length,have=used[len]||0,left=need-have;
+      const ch=document.createElement('div');
+      ch.className='dchip'+(left>0?' avail':' empty')+(this.holding&&this.holding.len===len?' sel':'');
+      for(let i=0;i<len;i++)ch.appendChild(document.createElement('i'));
+      const count=document.createElement('span');count.className='count';count.textContent='×'+left;ch.appendChild(count);
+      ch.onclick=()=>{
+        if(left<=0)return;
+        if(this.holding && this.holding.len===len){this.holding=null}
+        else{this.holding={len,orient:this.orient};this.selectedIdx=-1}
+        sfx('ui');this.drawDock();this.draw();
+      };
+      d.appendChild(ch);
+    });
+  },
+  
+  setHover(i){if(this.hover===i)return;this.hover=i;this.draw()},
+  
+  tap(i){
+    if(this.holding){
+      const cells=cellsFromStart(i,this.holding.len,this.orient);
+      if(canPlaceCells(this.ships,cells,-1)){
+        this.ships.push(cells);
+        vib(20);sfx('place');
+        const left=SIZES.filter(s=>s===this.holding.len).length-this.ships.filter(s=>s.length===this.holding.len).length;
+        if(left<=0)this.holding=null;
+        this.selectedIdx=-1;
+        this.draw();this.drawDock();
+      }else{
+        vib(50);
+        cells.forEach(c=>{if(c>=0&&c<100){this.cells[c].classList.add('badflash');setTimeout(()=>this.cells[c]&&this.cells[c].classList.remove('badflash'),350)}});
+        toast('⛔ Нельзя: корабли должны быть на расстоянии 1 клетки');
+      }
+      return;
+    }
+    
+    const idx=this.ships.findIndex(s=>s.includes(i));
+    if(idx>=0){
+      if(this.selectedIdx===idx){
+        // повторный тап — поворот вокруг центра
+        const rotated=rotateAroundCenter(this.ships[idx]);
+        if(rotated && canPlaceCells(this.ships,rotated,idx)){
+          this.ships[idx]=rotated;
+          vib(20);sfx('place');this.draw();
+        }else{
+          vib(50);toast('⟳ Здесь повернуть нельзя');
+        }
+      }else{
+        this.selectedIdx=idx;vib(15);sfx('ui');this.draw();
+      }
+      return;
+    }
+    
+    this.selectedIdx=-1;
+    this.draw();
+  },
+  
+  rotate(){
+    if(this.holding){
+      this.orient=!this.orient;
+      this.holding.orient=this.orient;
+      sfx('ui');this.draw();
+      return;
+    }
+    if(this.selectedIdx>=0){
+      const rotated=rotateAroundCenter(this.ships[this.selectedIdx]);
+      if(rotated && canPlaceCells(this.ships,rotated,this.selectedIdx)){
+        this.ships[this.selectedIdx]=rotated;
+        vib(20);sfx('place');this.draw();
+      }else{
+        vib(50);toast('⟳ Здесь повернуть нельзя');
+      }
+    }
+  },
+  
+  remove(){
+    if(this.selectedIdx<0)return;
+    this.ships.splice(this.selectedIdx,1);
+    this.selectedIdx=-1;
+    vib(30);sfx('ui');this.draw();this.drawDock();
+  },
+  
+  auto(){const l=randomLayout();if(l){this.ships=l;this.holding=null;this.selectedIdx=-1;sfx('place');vib(30);this.draw();this.drawDock()}},
+  clear(){this.ships=[];this.holding=null;this.selectedIdx=-1;this.draw();this.drawDock()},
+  
+  done(){
+    if(this.ships.length<10)return;
+    const ships=this.ships.map(s=>s.slice());
+    sfx('win');
+    if(this.mode==='ai')startAIBattle(ships);
+    else if(this.mode==='hs'){
+      if(this.phase===0){P._p1=ships;handoff('Передайте телефон','Теперь Игрок 2 расставляет свой флот. Игрок 1 — отвернитесь! 😉',()=>P.start('hs',1))}
+      else startHSBattle(P._p1,ships);
+    }
+    else if(this.mode==='net')netCreateRoom(ships);
+  }
+};
+
+$('#bP').addEventListener('click',e=>{
+  const c=e.target.closest('.c');if(!c)return;
+  const i=parseInt(c.dataset.idx);if(!isNaN(i))P.tap(i);
+});
+$('#bP').addEventListener('pointermove',e=>{
+  const c=e.target.closest('.c');if(!c){P.setHover(-1);return}
+  const i=parseInt(c.dataset.idx);if(!isNaN(i))P.setHover(i);
+});
+$('#bP').addEventListener('pointerleave',()=>P.setHover(-1));
+$('#btnRotate').onclick=()=>P.rotate();
+$('#btnRemove').onclick=()=>P.remove();
+$('#btnAuto').onclick=()=>P.auto();
+$('#btnClear').onclick=()=>P.clear();
+$('#chkHalo').onchange=e=>{settings.halo=e.target.checked;store.set('bs_set',settings);P.draw()};
+$('#btnPlaceDone').onclick=()=>P.done();
+$('#btnBackPlace').onclick=()=>{if(P.ships.length===0||confirm('Вернуться в меню?'))nav('menu')};
+
+/* ═════════ БОЙ ═════════ */
+const B={mode:null,ships:[null,null],moves:[],over:null,turnRole:0,cur:0,lock:false,ai:null,boards:[[],[]],log:[]};
+const selfRole=()=>B.mode==='hs'?B.cur:(B.mode==='net'?fbMyRole:0);
+const landView=b=>(1-b)===selfRole()?0:1;
+function hitsOf(role){const s=new Set();B.moves.forEach(m=>{if(m.b===(1-role)&&(m.r==='h'||m.r==='s'))s.add(m.c)});return s}
+function marksOn(view){const s=new Set();B.moves.forEach(m=>{if(landView(m.b)===view)s.add(m.c)});return s}
+function allSunk(role){const sh=B.ships[role];if(!sh)return false;const h=hitsOf(role);return sh.every(s=>s.every(c=>h.has(c)))}
+function roleLabel(r){if(B.mode==='ai')return r===0?'Вы':'🤖 Компьютер';if(B.mode==='hs')return'Игрок '+(r+1);return r===fbMyRole?'Вы':'Соперник'}
+function targetName(){return B.mode==='ai'?'🤖 Компьютер':B.mode==='hs'?'🎯 Игрок '+((1-B.cur)+1):'🎯 Флот соперника'}
+function myName(){return B.mode==='ai'?'🫵 Ваш флот':B.mode==='hs'?'🛡 Игрок '+(B.cur+1):'🛡 Ваш флот'}
+
+function updateFleets(){
+  const my=selfRole(),opp=1-my;
+  const mk=role=>{
+    const lay=B.ships[role];
+    if(lay){const h=hitsOf(role);return lay.map(sh=>({len:sh.length,dead:sh.every(c=>h.has(c))}))}
+    const sunk=B.moves.filter(m=>m.r==='s'&&(1-m.b)===role&&m.sc).map(m=>m.sc.length);
+    const list=SIZES.map(len=>({len,dead:false}));sunk.forEach(len=>{const f=list.find(x=>x.len===len&&!x.dead);if(f)f.dead=true});
+    return list;
+  };
+  fleetChips($('#fleetTop'),mk(opp));fleetChips($('#fleetBot'),mk(my));
+  $('#whoTop').textContent=targetName();$('#whoBot').textContent=myName();
+}
+function updateTurnbar(){
+  const tb=$('#turnbar');tb.classList.remove('me','foe');
+  if(B.over){tb.textContent='⚑ Бой окончен';return}
+  if(B.mode==='net'){
+    if(netTurnIsMine()){tb.textContent='🎯 ВАШ ВЫСТРЕЛ — жмите по клетке!';tb.classList.add('me')}
+    else{tb.textContent='⏳ Ход соперника…';tb.classList.add('foe')}
+    return;
+  }
+  const mine=B.mode==='ai'?B.turnRole===0:B.turnRole===B.cur;
+  tb.textContent=mine?(B.mode==='hs'?`🎯 Ход игрока ${B.cur+1} — огонь!`:'🎯 Ваш выстрел!'):(B.mode==='ai'?'🤖 Компьютер целится…':`🎯 Ход игрока ${B.cur+1}`);
+  tb.classList.add(mine?'me':'foe');
+}
+function renderAll(){
+  B.boards[0].forEach(el=>el.className='c');
+  B.boards[1].forEach(el=>el.className='c');
+  const mine=selfRole(),lay=B.ships[mine];
+  if(lay)lay.forEach(sh=>sh.forEach(c=>B.boards[0][c].classList.add('ship')));
+  B.moves.forEach(m=>{
+    if(m.r==null){B.boards[1][m.c].classList.add('pend');return}
+    const v=landView(m.b);B.boards[v][m.c].classList.add(m.r==='m'?'miss':'hit');
+    if(m.r==='s'&&m.sc)m.sc.forEach(c=>B.boards[v][c].classList.add('sunk'));
+  });
+  updateFleets();updateTurnbar();
+}
+function addLog(m){
+  if(m.a)return;
+  B.log.push({who:roleLabel(m.b),cell:fmtCell(m.c),r:m.r});
+  const t=$('#ticker');
+  const txt=m.r==='m'?'💦 МИМО':m.r==='h'?'💥 ПОПАДАНИЕ!':'☠️ КОРАБЛЬ ПОТОПЛЕН!';
+  t.textContent=`${m.who}: ${m.cell} — ${txt}`;
+  t.style.color=m.r==='m'?'#cdeefb':m.r==='h'?'#ffd97a':'#ff9a8a';
+}
+function paintShot(view,m,around,fx){
+  const cells=B.boards[view];const el=cells[m.c];
+  if(m.r==='m'){el.classList.add('miss');if(fx){sfx('splash');fxSplash(el)}}
+  else{el.classList.add('hit');if(fx){sfx(m.r==='s'?'sink':'boom');fxBoom(el);vib(m.r==='s'?[90,50,90,50,220]:[70,40,110])}}
+  if(m.r==='s'){
+    m.sc.forEach(c=>cells[c].classList.add('sunk'));
+    (around||[]).forEach(a=>cells[a].classList.add('miss'));
+    if(fx){$('#stageE').classList.add('shake');setTimeout(()=>$('#stageE').classList.remove('shake'),500)}
+  }
+}
+function enterBattle(){
+  B.boards=[buildBoard($('#bM')),buildBoard($('#bE'))];B.log=[];
+  $('#ticker').textContent='Бой начинается! Все ходы — в журнале (нажмите сюда).';$('#ticker').style.color='';
+  $('#roomBar').classList.toggle('hidden',B.mode!=='net');
+  if(B.mode==='net'){$('#roomCode').textContent=fbRoomId;$('#roomStatus').textContent='Real-time активен ⚡'}
+  renderAll();
+}
+function localShoot(shooter,cell){
+  const target=1-shooter,hits=hitsOf(target);
+  const res=checkShot(B.ships[target],hits,cell);
+  const m={b:shooter,c:cell,r:res.res==='m'?'m':res.res==='h'?'h':'s',sc:res.sh};
+  B.moves.push(m);addLog(m);paintShot(landView(shooter),m,res.around,true);
+  if(m.r==='s')toast('🔥 '+fmtLen(m.sc.length)+' корабль потоплен!');
+  (res.around||[]).forEach(a=>B.moves.push({b:shooter,c:a,r:'m',a:1}));
+  updateFleets();
+  if(allSunk(target)){finishBattle(shooter);return}
+  if(m.r==='m'){
+    if(B.mode==='hs'){B.cur=1-B.cur;B.turnRole=B.cur;
+      handoff(`Ход переходит к Игроку ${B.cur+1}`,`Передайте телефон. Игрок ${2-B.cur} — не подглядывайте! 👀`,()=>{renderAll()})}
+    else{B.turnRole=1;B.lock=true;updateTurnbar();setTimeout(aiStep,900)}
+  }else{
+    if(B.mode==='ai'&&shooter===1)setTimeout(aiStep,900);else updateTurnbar();
+  }
+}
+function aiStep(){
+  if(B.over)return;
+  const taken=marksOn(0);const c=B.ai.choose(taken);
+  const hits=hitsOf(0),res=checkShot(B.ships[0],hits,c);
+  const m={b:1,c,r:res.res==='m'?'m':res.res==='h'?'h':'s',sc:res.sh};
+  B.moves.push(m);addLog(m);paintShot(0,m,res.around,true);
+  if(m.r==='s'){B.ai.sunk();toast('🚨 Ваш '+fmtLen(m.sc.length)+' корабль потоплен!')}
+  else if(m.r==='h')B.ai.hit(c);
+  (res.around||[]).forEach(a=>B.moves.push({b:1,c:a,r:'m',a:1}));
+  updateFleets();
+  if(allSunk(0)){finishBattle(1);return}
+  if(m.r!=='m'){setTimeout(aiStep,950)}else{B.turnRole=0;B.lock=false;updateTurnbar()}
+}
+function finishBattle(winner){
+  B.over=winner;updateTurnbar();
+  const my=selfRole();const won=winner===my;
+  const entry={t:Date.now(),mode:B.mode,winner,ships:B.mode==='net'?null:[B.ships[0],B.ships[1]],
+    moves:B.moves.filter(m=>!m.a).map(m=>({b:m.b,c:m.c,r:m.r})),
+    names:B.mode==='hs'?['Игрок 1','Игрок 2']:B.mode==='ai'?['Вы','Компьютер']:['Вы','Соперник']};
+  if(B.mode==='net'){entry.netId=fbRoomId;entry.myRole=fbMyRole;entry.ships=null}
+  saveHistory(entry);
+  if(B.mode==='ai')addResult('ai',won);else if(B.mode==='hs')addResult('hs',null);else addResult('net',won);
+  sfx(B.mode==='hs'?'win':won?'win':'lose');vib(won?[60,40,60,40,140]:300);
+  setTimeout(()=>showResult(winner),1100);
+}
+function onEnemyTap(i){
+  sfx('ui');
+  if(B.over||B.lock)return;
+  if(B.mode==='net'){
+    if(!netTurnIsMine())return;
+    if(B.moves.some(m=>m.b===fbMyRole&&m.c===i)){toast('Сюда уже стреляли');return}
+    fbShoot(i);return;
+  }
+  const shooter=B.mode==='hs'?B.cur:0;
+  if(B.turnRole!==shooter)return;
+  if(marksOn(1).has(i)){toast('Сюда уже стреляли');return}
+  sfx('shoot');localShoot(shooter,i);
+}
+$('#bE').addEventListener('click',e=>{
+  const c=e.target.closest('.c');if(!c)return;
+  const i=parseInt(c.dataset.idx);if(!isNaN(i))onEnemyTap(i);
+});
+$('#ticker').onclick=()=>{
+  const l=$('#logList');l.innerHTML='';
+  if(!B.log.length)l.innerHTML='<li>Пока ни одного выстрела…</li>';
+  B.log.forEach(e=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<span class="dot ${e.r==='m'?'m':e.r==='h'?'h':'s'}"></span> ${e.who}: <b>&nbsp;${e.cell}</b>&nbsp;— ${e.r==='m'?'мимо':e.r==='h'?'попадание':'ПОТОПИЛ!'}`;
+    l.appendChild(li);
+  });
+  $('#logSheet').classList.remove('hidden');
+};
+$('#logClose').onclick=()=>$('#logSheet').classList.add('hidden');
+$('#logSheet').addEventListener('click',e=>{if(e.target.id==='logSheet')e.currentTarget.classList.add('hidden')});
+$('#btnExitBattle').onclick=()=>{if(B.over||confirm('Покинуть бой?'))nav('menu')};
+
+function startAIBattle(myShips){
+  B.mode='ai';B.ships=[myShips,randomLayout()];B.moves=[];B.over=null;B.cur=0;B.lock=false;B.ai=makeAI();
+  B.turnRole=Math.random()<.5?0:1;enterBattle();nav('battle');
+  toast(B.turnRole===0?'🎲 Вы ходите первым!':'🎲 Первым ходит компьютер');
+  if(B.turnRole===1){B.lock=true;setTimeout(aiStep,1100)}
+}
+function startHSBattle(s0,s1){
+  B.mode='hs';B.ships=[s0,s1];B.moves=[];B.over=null;B.lock=false;
+  B.cur=Math.random()<.5?0:1;B.turnRole=B.cur;
+  handoff(`Первым ходит Игрок ${B.cur+1}!`,`Жребий брошен 🎲 Передайте телефон Игроку ${B.cur+1}.`,()=>{enterBattle();nav('battle')});
+}
+
+/* ═════════ РЕЗУЛЬТАТ ═════════ */
+function showResult(winner,extra){
+  const my=B.mode==='net'?fbMyRole:(B.mode==='hs'?-1:0);
+  const t=$('#resTitle'),e=$('#resEmoji');
+  let win,txt;
+  if(B.mode==='hs'){win=true;e.textContent='🎉';t.textContent=`Победил Игрок ${winner+1}!`;t.className='win';txt='Отличный бой!'}
+  else{const won=winner===my;win=won;e.textContent=won?'🏆':'💀';t.textContent=won?'ПОБЕДА!':'ПОРАЖЕНИЕ';
+    t.className=won?'win':'lose';txt=won?'Флот противника уничтожен!':'Ваш флот потоплен… Реванш?'}
+  $('#resSub').textContent=txt+' · Выстрелов: '+B.moves.filter(m=>!m.a).length;
+  $('#resFair').textContent=extra||'';
+  $('#btnAgain').classList.toggle('hidden',B.mode==='net');
+  nav('result');if(win&&settings.fx)confetti();
+}
+function confetti(){
+  const p=$('#scr-result .panel');
+  for(let i=0;i<16;i++){
+    const s=document.createElement('span');s.className='conf';
+    s.style.left=Math.random()*100+'%';s.style.background=['#ffc24b','#35c4dc','#ff6b4a','#39d98a','#fff'][i%5];
+    s.style.animationDuration=(1.4+Math.random()*1.4)+'s';s.style.animationDelay=(Math.random()*.7)+'s';
+    p.appendChild(s);setTimeout(()=>s.remove(),3200);
+  }
+}
+$('#btnAgain').onclick=()=>{sfx('ui');if(B.mode==='ai')P.start('ai');else if(B.mode==='hs')P.start('hs',0)};
+$('#btnResMenu').onclick=()=>nav('menu');
+
+/* ═════════ ИГРА ПО FIREBASE (REAL-TIME) ═════════ */
+function netTurnIsMine(){
+  if(!B.moves.length)return fb.st.first===fbMyRole;
+  const last=B.moves[B.moves.length-1];
+  if(last.r==null)return false;
+  return last.r==='m' ? last.b!==fbMyRole : last.b===fbMyRole;
+}
+const fb={st:null,first:-1,ships:[null,null]};
+
+function netCreateRoom(ships){
+  if(!fb){toast('Сначала настройте Firebase (см. раздел "Игра с другом")');return}
+  const id=randCode();
+  const shipsHash=btoa(JSON.stringify(ships));
+  const ref=fb.db.ref('rooms/'+id);
+  const state={
+    v:1,
+    first:Math.random()<.5?0:1,
+    status:'waiting',
+    players:{
+      0:{ships:shipsHash,ready:true},
+      1:{ships:null,ready:false}
+    },
+    moves:[],
+    reveal:{0:null,1:null}
+  };
+  ref.set(state).then(()=>{
+    fbRoomId=id;fbMyRole=0;fbRef=ref;fb.ships[0]=ships;
+    $('#waitCode').textContent=id;
+    $('#waitTxt').textContent='Скажите сыну этот код — пусть введёт в своей игре';
+    $('#waitOvl').classList.remove('hidden');
+    fbUnsubscribe=ref.on('value',snap=>{
+      const v=snap.val();if(!v)return;
+      fb.st=v;
+      if(v.status==='playing'){
+        $('#waitOvl').classList.add('hidden');
+        fb.st=v;enterNetBattle();
+      }
+    });
+  }).catch(e=>toast('Ошибка: '+e.message));
+}
+$('#waitCancel').onclick=()=>{
+  if(fbUnsubscribe)fbUnsubscribe();
+  if(fbRef)fbRef.remove().catch(()=>{});
+  $('#waitOvl').classList.add('hidden');nav('menu');
+};
+
+function netJoinRoom(code){
+  if(!fb){toast('Сначала настройте Firebase');return}
+  const id=code.trim().toUpperCase();
+  if(!/^[A-Z0-9]{6}$/.test(id)){toast('Код должен быть 6 букв/цифр');return}
+  const ref=fb.db.ref('rooms/'+id);
+  ref.once('value').then(snap=>{
+    const v=snap.val();
+    if(!v){toast('Комната не найдена');return}
+    if(v.status!=='waiting'){toast('Игра уже началась или завершена');return}
+    if(v.players[1]&&v.players[1].ready){toast('Второе место уже занято');return}
+    fbRoomId=id;fbMyRole=1;fbRef=ref;
+    P.mode='net';P.start('net');
+  }).catch(e=>toast('Ошибка: '+e.message));
+}
+$('#btnNetNew').onclick=()=>{if(!fb){toast('Сначала подключите Firebase');return}P.start('net')};
+$('#btnNetJoin').onclick=()=>netJoinRoom($('#joinCode').value);
+
+/* когда Игрок 2 расставил — он пишет свои ships и status='playing' */
+function netOnPlacedDone(ships){
+  const shipsHash=btoa(JSON.stringify(ships));
+  fb.ships[fbMyRole]=ships;
+  fbRef.update({
+    [`players/${fbMyRole}/ships`]:shipsHash,
+    [`players/${fbMyRole}/ready`]:true,
+    status:'playing'
+  });
+  fbUnsubscribe=fbRef.on('value',snap=>{
+    const v=snap.val();if(!v)return;fb.st=v;updateNetBattle();
+  });
+  fb.st=fb.st||{first:-1,moves:[],players:{0:{},1:{}},reveal:{0:null,1:null}};
+  enterNetBattle();
+}
+/* перезаписать done для net */
+const origDone=P.done;
+P.done=function(){
+  if(this.ships.length<10)return;
+  const ships=this.ships.map(s=>s.slice());
+  sfx('win');
+  if(this.mode==='ai')startAIBattle(ships);
+  else if(this.mode==='hs'){
+    if(this.phase===0){P._p1=ships;handoff('Передайте телефон','Теперь Игрок 2 расставляет. Игрок 1 — отвернитесь! 😉',()=>P.start('hs',1))}
+    else startHSBattle(P._p1,ships);
+  }
+  else if(this.mode==='net')netOnPlacedDone(ships);
+};
+
+function enterNetBattle(){
+  B.mode='net';B.over=null;B.moves=[];
+  /* ships пока пустые, будут заполняться из fb.st по мере прихода */
+  B.ships=[null,null];
+  enterBattle();nav('battle');
+}
+function updateNetBattle(){
+  if(!fb.st)return;
+  const v=fb.st;
+  /* получаем свои ships если есть */
+  if(v.players[fbMyRole]&&v.players[fbMyRole].ships&&fb.ships[fbMyRole])B.ships[fbMyRole]=fb.ships[fbMyRole];
+  /* moves из Firebase в B.moves (синхронизация) */
+  const fMoves=v.moves||[];
+  B.moves=fMoves.map(m=>({b:m[0],c:m[1],r:m[2],sc:m[3],a:m[4]}));
+  renderAll();
+  /* анимация нового хода если соперник сходил */
+  if(fMoves.length>netLastMoveCount){
+    const nm=fMoves[fMoves.length-1];
+    if(nm[0]!==fbMyRole && nm[2]!=null){
+      /* ход соперника по нашему полю */
+      const mm={b:nm[0],c:nm[1],r:nm[2],sc:nm[3]};
+      paintShot(0,mm,nm[5]||[],true);
+      addLog(mm);
+      if(nm[2]==='s')toast('🚨 Ваш корабль потоплен!');
+      vib(nm[2]==='m'?20:[70,40,110]);
+      /* проверка победы соперника */
+      if(allSunk(fbMyRole)){finishBattle(1-fbMyRole);netWriteReveal();return}
+    }else if(nm[0]===fbMyRole && nm[2]!=null){
+      /* результат моего выстрела пришёл */
+      const mm={b:nm[0],c:nm[1],r:nm[2],sc:nm[3]};
+      addLog(mm);
+      if(nm[2]==='s'){toast('🔥 Потоплен!');if(allSunk(1-fbMyRole)){finishBattle(fbMyRole);netWriteReveal();return}}
+      else if(nm[2]==='h')toast('💥 Попал! Хожу ещё');
+      else toast('💦 Мимо, ход переходит');
+    }
+  }
+  netLastMoveCount=fMoves.length;
+}
+let netLastMoveCount=0;
+
+function fbShoot(i){
+  B.lock=true;
+  /* добавляем ход без результата */
+  fbRef.child('moves').push([fbMyRole,i,null,null,null]).then(ref=>{
+    B.lock=false;
+    B.moves.push({b:fbMyRole,c:i,r:null});renderAll();sfx('shoot');
+    /* серверный обработчик посчитает результат и допишет в move */
+    /* для простоты посчитаем сами и обновим */
+    fb.db.ref('rooms/'+fbRoomId).once('value').then(snap=>{
+      const v=snap.val();
+      const oppShipsHash=v.players[1-fbMyRole].ships;
+      if(!oppShipsHash){toast('Соперник ещё не готов');return}
+      /* у нас нет настоящих ships соперника — но есть moves с результатами,
+         посчитать можем только по уже открытым попаданиям */
+      /* поэтому доверим вычисление самому себе на основе уже известных данных */
+      computeShotResult(ref.key,i);
+    });
+  }).catch(e=>{B.lock=false;toast('Ошибка отправки')});
+}
+function computeShotResult(moveKey,cell){
+  fb.db.ref('rooms/'+fbRoomId).once('value').then(snap=>{
+    const v=snap.val();
+    /* получаем ships соперника из reveal если есть, иначе считаем по открытым попаданиям */
+    const myShips=fb.ships[fbMyRole];
+    /* собираем все известные попадания соперника по МНЕ */
+    const hitsOnMe=new Set();
+    for(const m of v.moves){if(m[0]===(1-fbMyRole)&&(m[2]==='h'||m[2]==='s'))hitsOnMe.add(m[1])}
+    const res=checkShot(myShips,hitsOnMe,cell);
+    /* эй, это не то. Мне нужно проверить попадание ПО СОПЕРНИКУ, а не по себе.
+       Проблема: мы не знаем ships соперника, пока игра не кончится.
+       Решение: каждый игрок САМ считает результат выстрела СОПЕРНИКА по своему полю.
+       Т.е. когда игрок A стреляет, игрок B проверяет: попал ли A по B?
+       Значит: результат пишет тот, в кого стреляют. */
+    /* Но мы вызываем computeShotResult на стороне стреляющего.
+       Правильнее: стреляющий отправляет [role, cell, null], а защищающийся (получатель хода) заполняет result.
+       Это сложнее. Сделаем проще: оба игрока хранят свои ships локально, и каждый вычисляет свой собственный "результат выстрела по мне".
+       То есть: после отправки хода ждём, когда защищающийся сам вычислит и дополнит move. */
+  });
+}
+
+/* Переделаем: когда соперник стреляет по мне, я сам считаю результат и дописываю */
+function startNetListener(){
+  if(fbUnsubscribe)fbUnsubscribe();
+  let lastMoves=[];
+  fbUnsubscribe=fbRef.on('value',snap=>{
+    const v=snap.val();if(!v)return;
+    fb.st=v;
+    /* проверяем новые ходы соперника */
+    const curMoves=v.moves||[];
+    for(let i=lastMoves.length;i<curMoves.length;i++){
+      const m=curMoves[i];
+      if(m[0]!==fbMyRole && m[2]==null){
+        /* соперник стрелял по мне, и результат ещё не посчитан — посчитаю я */
+        resolveIncomingShot(i,m);
+      }
+    }
+    lastMoves=curMoves;
+    if(v.status==='playing')updateNetBattle();
+  });
+}
+function resolveIncomingShot(idx,m){
+  const cell=m[1];
+  const hitsOnMe=new Set();
+  (fb.st.moves||[]).forEach(x=>{
+    if(x[0]!==fbMyRole&&(x[2]==='h'||x[2]==='s'))hitsOnMe.add(x[1]);
+  });
+  const res=checkShot(fb.ships[fbMyRole],hitsOnMe,cell);
+  const r=res.res==='m'?'m':res.res==='h'?'h':'s';
+  const updates={};
+  updates[`moves/${idx}/2`]=r;
+  if(r==='s'){updates[`moves/${idx}/3`]=res.sh;updates[`moves/${idx}/5`]=res.around;
+    res.around.forEach(a=>fbRef.child('moves').push([fbMyRole,a,'m',null,null,1]))}
+  fbRef.update(updates);
+  if(r==='s'&&checkAllSunkMine())fbRef.update({status:'over',winner:1-fbMyRole,['reveal/'+fbMyRole]:fb.ships[fbMyRole]});
+}
+function checkAllSunkMine(){
+  const hits=new Set();
+  (fb.st.moves||[]).forEach(m=>{if(m[0]!==fbMyRole&&(m[2]==='h'||m[2]==='s'))hits.add(m[1])});
+  return fb.ships[fbMyRole].every(s=>s.every(c=>hits.has(c)));
+}
+function netWriteReveal(){fbRef.update({['reveal/'+fbMyRole]:fb.ships[fbMyRole]})}
+
+/* заменяем enterNetBattle чтобы включать listener */
+function enterNetBattleReal(){
+  B.mode='net';B.over=null;B.moves=[];B.ships=[null,null];
+  B.ships[fbMyRole]=fb.ships[fbMyRole];
+  enterBattle();nav('battle');
+  startNetListener();
+}
+/* перезаписываем */
+enterNetBattle=enterNetBattleReal;
+
+/* проверяем статус 'over' в listener */
+(function(){
+  const origUpdate=updateNetBattle;
+  updateNetBattle=function(){
+    if(fb.st&&fb.st.status==='over'){
+      const winner=fb.st.winner;
+      if(B.over==null){
+        B.over=winner;
+        finishBattle(winner);
+      }
+      return;
+    }
+    origUpdate();
+  };
+})();
+
+/* ═════════ история и рейтинг ═════════ */
+function saveHistory(e){const h=store.get('bs_hist',[]);h.unshift(e);if(h.length>40)h.length=40;store.set('bs_hist',h)}
+function getStats(){return store.get('bs_stats',{games:0,wins:0,losses:0,streak:0,best:0,by:{}})}
+function addResult(mode,won){
+  const s=getStats();s.games++;s.by[mode]=s.by[mode]||{g:0,w:0,l:0};s.by[mode].g++;
+  if(won==null){}else if(won){s.wins++;s.by[mode].w++;s.streak++;s.best=Math.max(s.best,s.streak)}
+  else{s.losses++;s.by[mode].l++;s.streak=0}
+  store.set('bs_stats',s);
+}
+const MODE_NAME={ai:'против 🤖',hs:'вдвоём 👥',net:'по коду ⚡'};
+function renderHistory(){
+  const list=$('#histList');const h=store.get('bs_hist',[]);
+  if(!h.length){list.innerHTML='<p class="hint">Пока ни одного боя. ⚓</p>';return}
+  list.innerHTML='';h.forEach((e,idx)=>{
+    const d=document.createElement('div');d.className='hitem';
+    const names=e.names||['Игрок 1','Игрок 2'];
+    const wName=names[e.winner]??'—';
+    d.innerHTML=`<div><b>${e.mode==='ai'?'🤖':e.mode==='hs'?'👥':'⚡'} ${MODE_NAME[e.mode]}</b>
+      <small>${new Date(e.t).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})} · победил: ${wName} · ходов: ${e.moves.length}</small></div>
+      <button class="btn sm">▶</button>`;
+    d.querySelector('button').onclick=()=>viewGame(idx);list.appendChild(d);
+  });
+}
+function viewGame(idx){
+  const e=store.get('bs_hist',[])[idx];if(!e)return;
+  $('#viewTitle').textContent=e.mode==='net'?'Онлайн-бой #'+(e.netId||''):'Бой '+new Date(e.t).toLocaleDateString('ru-RU');
+  const names=e.names||['Игрок 1','Игрок 2'];
+  $('#viewBotName').textContent='🛡 '+(e.mode==='net'?names[e.myRole??0]:names[0]);
+  $('#viewTopName').textContent='🎯 '+(e.mode==='net'?names[1-(e.myRole??0)]:names[1]);
+  const top=buildBoard($('#vTop')),bot=buildBoard($('#vBot'));
+  const lay=e.ships;
+  if(lay){lay[0].forEach(s=>s.forEach(c=>bot[c].classList.add('ship')));lay[1].forEach(s=>s.forEach(c=>top[c].classList.add('ship')))}
+  const hits=[new Set(),new Set()];
+  e.moves.forEach(m=>{const view=1-m.b;const cells=view?top:bot;
+    cells[m.c].classList.add(m.r==='m'?'miss':'hit');if(m.r!=='m')hits[m.b].add(m.c)});
+  if(lay)lay.forEach((l,r)=>l.forEach(s=>{if(s.every(c=>hits[r].has(c)))s.forEach(c=>(r?top:bot)[c].classList.add('sunk'))}));
+  const mkFleet=(el,r)=>{if(lay)fleetChips(el,lay[r].map(s=>({len:s.length,dead:s.every(c=>hits[r].has(c))})));else el.innerHTML='<span class="badge">флот скрыт 🔒</span>'};
+  mkFleet($('#viewFleetTop'),1);mkFleet($('#viewFleetBot'),0);
+  const ol=$('#viewMoves');ol.innerHTML='';
+  e.moves.forEach((m,i)=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<span class="dot ${m.r==='m'?'m':m.r==='h'?'h':'s'}"></span>${i+1}. ${names[m.b]}: <b>&nbsp;${fmtCell(m.c)}</b>&nbsp;— ${m.r==='m'?'мимо':m.r==='h'?'попадание':'потопил!'}`;ol.appendChild(li);
+  });
+  $('#viewCount').textContent=e.moves.length+' выстрелов';nav('view');
+}
+function renderStats(){
+  const s=getStats();const g=$('#statGrid');
+  const pct=s.games?Math.round(s.wins/s.games*100):0;
+  g.innerHTML=`<div class="stat"><b>${s.games}</b><span>всего боёв</span></div>
+    <div class="stat"><b>${s.wins}</b><span>побед</span></div>
+    <div class="stat"><b>${pct}%</b><span>процент побед</span></div>
+    <div class="stat"><b>${s.best}</b><span>лучшая серия</span></div>`;
+  const rows=$('#statRows');rows.innerHTML='';
+  ['ai','net','hs'].forEach(k=>{
+    const b=s.by[k]||{g:0,w:0,l:0};const d=document.createElement('div');d.className='tgl';
+    d.innerHTML=`<span>${MODE_NAME[k]}</span><span class="badge">${b.g} игр · ${b.w} побед${b.l?' · '+b.l+' пораж.':''}</span>`;rows.appendChild(d);
+  });
+}
+function refreshMenuStats(){
+  const s=getStats();
+  $('#menuStats').textContent=s.games?`⚓ Сыграно: ${s.games} · Побед: ${s.wins} · Серия: ${s.streak}`:'⚓ Ваш флот ждёт приказа, адмирал!';
+}
+$$('.mbtn').forEach(b=>b.onclick=()=>{
+  sfx('ui');const go=b.dataset.go;
+  if(go==='ai')P.start('ai');
+  else if(go==='hs')P.start('hs',0);
+  else if(go==='net'){nav('net');if(fb){$('#netMain').classList.remove('hidden')}}
+  else if(go==='history'){renderHistory();nav('history')}
+  else if(go==='stats'){renderStats();nav('stats')}
+  else if(go==='settings')nav('settings');
+});
+$$('[data-back]').forEach(b=>b.onclick=()=>{sfx('ui');nav(b.dataset.back);if(b.dataset.back==='menu')refreshMenuStats()});
+$('#setVibro').checked=settings.vibro;$('#setFx').checked=settings.fx;$('#setHalo').checked=settings.halo;
+[['setVibro','vibro'],['setFx','fx'],['setHalo','halo']].forEach(([id,k])=>{
+  $('#'+id).onchange=e=>{settings[k]=e.target.checked;store.set('bs_set',settings);sfx('ui')};
+});
+$('#btnWipe').onclick=()=>{if(confirm('Удалить историю и статистику?')){localStorage.removeItem('bs_hist');localStorage.removeItem('bs_stats');toast('🗑 Очищено');refreshMenuStats()}};
+document.addEventListener('pointerdown',()=>{try{AC&&AC.state==='suspended'&&AC.resume()}catch(e){}},{capture:true});
+refreshMenuStats();
+if(fbConfigSaved&&fb){$('#netMain').classList.remove('hidden')}
+</script>
+</body>
+</html>
